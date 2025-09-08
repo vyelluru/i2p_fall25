@@ -22,13 +22,13 @@ async function main(){
 
     await client.connect(transport);
 
-    const warsawRes = await client.callTool({
+    var currTimeRes = await client.callTool({
         name: "get_current_time",
         arguments: { timezone: "Europe/Warsaw" }
     });
 
-    const warsaw = parseToolJson(warsawRes);
-    console.log("Warsaw:", warsaw.timezone, warsaw.datetime, warsaw.is_dst);
+    currTimeRes = parseToolJson(currTimeRes);
+    console.log("Warsaw:", currTimeRes.timezone, currTimeRes.datetime, currTimeRes.is_dst);
 
     const convertedRes = await client.callTool({
         name: "convert_time",
