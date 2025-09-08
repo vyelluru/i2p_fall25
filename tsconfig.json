@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "module": "nodenext", // Use Node.js-style module resolution with ES modules
-    "moduleResolution": "nodenext", // Resolve modules in Node.js-style for ES modules
-    "target": "esnext", // Target modern JavaScript
-    "lib": ["esnext"], // Include ESNext library definitions
-    "strict": true, // Enable strict type checking
-    "esModuleInterop": true, // Ensure compatibility with CommonJS modules
-    "skipLibCheck": true, // Skip type checking of declaration files
-    "outDir": "./dist", // Output directory for compiled files
-    "rootDir": "./src" // Root directory for source files
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
