@@ -8,7 +8,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-    { name: "demo-client", version: "1.0.0" }, // <-- first arg must have name/version
+    { name: "mcp-security", version: "1.0.0" }, 
   );
   
 
