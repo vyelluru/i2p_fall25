@@ -8,7 +8,7 @@ import {
   import { CreateMessageResultSchema } from "@modelcontextprotocol/sdk/types.js"
   
   const server = new McpServer({
-    name: "test-video",
+    name: "mcp-security",
     version: "1.0.0",
     capabilities: {
       resources: {},
@@ -168,26 +168,6 @@ import {
     }
   )
   
-  server.prompt(
-    "generate-fake-user",
-    "Generate a fake user based on a given name",
-    {
-      name: z.string(),
-    },
-    ({ name }) => {
-      return {
-        messages: [
-          {
-            role: "user",
-            content: {
-              type: "text",
-              text: `Generate a fake user with the name ${name}. The user should have a realistic email, address, and phone number.`,
-            },
-          },
-        ],
-      }
-    }
-  )
   
   async function createUser(user: {
     name: string
