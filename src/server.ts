@@ -1,45 +1,31 @@
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-// Create an MCP server
-const server = new McpServer({
-  name: "demo-server",
-  version: "1.0.0"
+const server = new McpServer({ name: "demo-server", version: "1.0.0" });
+
+server.tool(
+  "add",
+  "Add two numbers",
+  { a: z.number(), b: z.number() },
+  async ({ a, b }) => ({ content: [{ type: "text", text: String(a + b) }] })
+);
+
+(async () => {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("MCP server connected");
+
+  // Keep the process alive by keeping stdin in flowing mode.
+  // This is the simplest reliable keep-alive for stdio-based MCP servers.
+  process.stdin.resume();
+
+  // (Optional) also keep a long timer as a backstop:
+  // setInterval(() => {}, 1 << 30);
+})().catch((e) => {
+  console.error("Server fatal error:", e?.stack ?? e);
+  process.exit(1);
 });
 
-// Add an addition tool
-server.registerTool("add",
-  {
-    title: "Addition Tool",
-    description: "Add two numbers",
-    inputSchema: { a: z.number(), b: z.number() }
-  },
-  async ({ a, b }) => ({
-    content: [{ type: "text", text: String(a + b) }]
-  })
-);
-
-// Add a dynamic greeting resource
-server.registerResource(
-  "greeting",
-  new ResourceTemplate("greeting://{name}", { list: undefined }),
-  { 
-    title: "Greeting Resource",      // Display name for UI
-    description: "Dynamic greeting generator"
-  },
-  async (uri, { name }) => ({
-    contents: [{
-      uri: uri.href,
-      text: `Hello, ${name}!`
-    }]
-  })
-);
-
-// Start receiving messages on stdin and sending messages on stdout
-(async () => {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-  })();
-
-console.log("Server is starting...");
+// Never log to stdout (reserved for MCP protocol)
+console.error("Server is starting...");
