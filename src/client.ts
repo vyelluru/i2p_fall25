@@ -1,31 +1,146 @@
-// // testClient.ts
-// import { McpClient } from "@modelcontextprotocol/sdk/client/mcp.js";
-// import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import "dotenv/config"
+import { confirm, input, select } from "@inquirer/prompts"
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+import {
+  CreateMessageRequestSchema,
+  Prompt,
+  PromptMessage,
+  Tool,
+} from "@modelcontextprotocol/sdk/types.js"
+import { generateText, jsonSchema, ToolSet } from "ai"
 
-// import { spawn } from "child_process";
+const mcp = new Client(
+  {
+    name: "text-client-video",
+    version: "1.0.0",
+  },
+  { capabilities: { sampling: {} } }
+)
 
-// async function main() {
-//   // Spawn the server as a subprocess
-//   const serverProcess = spawn("node", ["server.js"]);
+const transport = new StdioClientTransport({
+  command: "node",
+  args: ["build/server.js"],
+  stderr: "ignore",
+})
 
-//   const transport = new StdioClientTransport({
-//     stdin: serverProcess.stdin!,
-//     stdout: serverProcess.stdout!,
-//   });
+async function main() {
+  await mcp.connect(transport)
+  const [{ tools }, { prompts }, { resources }, { resourceTemplates }] =
+    await Promise.all([
+      mcp.listTools(),
+      mcp.listPrompts(),
+      mcp.listResources(),
+      mcp.listResourceTemplates(),
+    ])
 
-//   const client = new McpClient(transport);
+  mcp.setRequestHandler(CreateMessageRequestSchema, async request => {
+    const texts: string[] = []
 
-//   await client.connect();
+    return {
+      role: "user",
+      model: "gemini-2.0-flash",
+      stopReason: "endTurn",
+      content: {
+        type: "text",
+        text: texts.join("\n"),
+      },
+    }
+  })
 
-//   // Test the "add" tool
-//   const addResult = await client.callTool("add", { a: 2, b: 3 });
-//   console.log("Add result:", addResult);
+  console.log("You are connected!")
+  while (true) {
+    const option = await select({
+      message: "What would you like to do",
+      choices: ["Query", "Tools", "Resources", "Prompts"],
+    })
 
-//   // Test the "greeting" resource
-//   const greeting = await client.readResource("greeting://World");
-//   console.log("Greeting result:", greeting);
+    switch (option) {
+      case "Tools":
+        const toolName = await select({
+          message: "Select a tool",
+          choices: tools.map(tool => ({
+            name: tool.annotations?.title || tool.name,
+            value: tool.name,
+            description: tool.description,
+          })),
+        })
+        const tool = tools.find(t => t.name === toolName)
+        if (tool == null) {
+          console.error("Tool not found.")
+        } else {
+          await handleTool(tool)
+        }
+        break
+      case "Resources":
+        const resourceUri = await select({
+          message: "Select a resource",
+          choices: [
+            ...resources.map(resource => ({
+              name: resource.name,
+              value: resource.uri,
+              description: resource.description,
+            })),
+            ...resourceTemplates.map(template => ({
+              name: template.name,
+              value: template.uriTemplate,
+              description: template.description,
+            })),
+          ],
+        })
+        const uri =
+          resources.find(r => r.uri === resourceUri)?.uri ??
+          resourceTemplates.find(r => r.uriTemplate === resourceUri)
+            ?.uriTemplate
+        if (uri == null) {
+          console.error("Resource not found.")
+        } else {
+          await handleResource(uri)
+        }
+        break
+    }
+  }
+}
 
-//   serverProcess.kill();
-// }
 
-// main();
+async function handleTool(tool: Tool) {
+  const args: Record<string, string> = {}
+  for (const [key, value] of Object.entries(
+    tool.inputSchema.properties ?? {}
+  )) {
+    args[key] = await input({
+      message: `Enter value for ${key} (${(value as { type: string }).type}):`,
+    })
+  }
+
+  const res = await mcp.callTool({
+    name: tool.name,
+    arguments: args,
+  })
+
+  console.log((res.content as [{ text: string }])[0].text)
+}
+
+async function handleResource(uri: string) {
+  let finalUri = uri
+  const paramMatches = uri.match(/{([^}]+)}/g)
+
+  if (paramMatches != null) {
+    for (const paramMatch of paramMatches) {
+      const paramName = paramMatch.replace("{", "").replace("}", "")
+      const paramValue = await input({
+        message: `Enter value for ${paramName}:`,
+      })
+      finalUri = finalUri.replace(paramMatch, paramValue)
+    }
+  }
+
+  const res = await mcp.readResource({
+    uri: finalUri,
+  })
+
+  console.log(
+    JSON.stringify(JSON.parse(res.contents[0].text as string), null, 2)
+  )
+}
+main()
