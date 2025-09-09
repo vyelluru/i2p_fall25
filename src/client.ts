@@ -13,8 +13,8 @@ const client = new Client(
   
 
 function parseToolJson(res: any) {
-const text = res?.content?.find((c: any) => c.type === "text")?.text ?? "";
-return JSON.parse(text);
+    const text = res?.content?.find((c: any) => c.type === "text")?.text ?? "";
+    return JSON.parse(text);
 }
 
 
