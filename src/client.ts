@@ -24,7 +24,7 @@ async function main(){
 
     var currTimeRes = await client.callTool({
         name: "get_current_time",
-        arguments: { timezone: "Europe/Warsaw" }
+        arguments: { timezone: "America/New_York" }
     });
 
     currTimeRes = parseToolJson(currTimeRes);
@@ -34,7 +34,7 @@ async function main(){
         name: "convert_time",
         arguments: {
             source_timezone: "America/New_York",
-            time: "16:30",
+            time: "14:00",
             target_timezone: "Asia/Tokyo",
         },
     });
